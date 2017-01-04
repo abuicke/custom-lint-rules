@@ -22,10 +22,8 @@ android {
 }
 
 dependencies {
-    dependencies {
-        compile(project(path: ':lint-rules')) {
-            exclude group: 'com.android.tools.lint'
-            exclude group: 'org.projectlombok'
-        }
+    compile(project(path: ':lint-rules')) {
+        exclude group: 'com.android.tools.lint'
+        exclude group: 'org.projectlombok'
     }
 }

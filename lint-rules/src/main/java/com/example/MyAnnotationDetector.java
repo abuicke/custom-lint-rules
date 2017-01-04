@@ -1,7 +1,6 @@
 package com.example;
 
 import com.android.annotations.NonNull;
-import com.android.tools.lint.client.api.JavaParser.ResolvedAnnotation;
 import com.android.tools.lint.client.api.JavaParser.ResolvedMethod;
 import com.android.tools.lint.client.api.JavaParser.ResolvedNode;
 import com.android.tools.lint.detector.api.Category;
@@ -15,49 +14,26 @@ import com.android.tools.lint.detector.api.Severity;
 import com.android.tools.lint.detector.api.Speed;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import lombok.ast.AstVisitor;
-import lombok.ast.ConstructorInvocation;
 import lombok.ast.ForwardingAstVisitor;
+import lombok.ast.MethodDeclaration;
 import lombok.ast.MethodInvocation;
 import lombok.ast.Node;
 
 public class MyAnnotationDetector extends Detector implements Detector.JavaScanner {
 
-  public static final Issue CAREFUL_NOW_ISSUE = Issue.create(
-      "CarefulNow",
-      "Be careful when using this method.",
-      "This method has special conditions surrounding it's use," +
-          " be careful when calling it and refer to its documentation.",
+  public static final Issue LOGGER_ISSUE = Issue.create(
+      "SywLogIsNotUsed",
+      "You must use our `SywLog`",
+      "Logging should be avoided in production for security and performance reasons."
+          + " Therefore, we created a SywLog that wraps all our calls to Logger and disable them for release flavor.",
       Category.USABILITY,
-      7,
-      Severity.WARNING,
-      new Implementation(
-          MyAnnotationDetector.class,
-          Scope.JAVA_FILE_SCOPE));
-
-  private static final String CAREFUL_NOW_ANNOTATION = "com.annotations.CarefulNow";
-
-  private static void checkMethodAnnotation(@NonNull JavaContext context,
-                                            @NonNull ResolvedMethod method,
-                                            @NonNull Node node,
-                                            @NonNull ResolvedAnnotation annotation) {
-    String signature = annotation.getSignature();
-    if(CAREFUL_NOW_ANNOTATION.equals(signature) || signature.endsWith(".CarefulNow")) {
-      checkCarefulNow(context, node, annotation);
-    }
-  }
-
-  private static void checkCarefulNow(@NonNull JavaContext context,
-                                      @NonNull Node node,
-                                      @NonNull ResolvedAnnotation annotation) {
-    context.report(CAREFUL_NOW_ISSUE, node, context.getLocation(node),
-        "This method has special conditions surrounding it's use, " +
-            "be careful when calling it and refer to it's documentation.");
-  }
+      9,
+      Severity.ERROR,
+      new Implementation(MyAnnotationDetector.class, Scope.JAVA_FILE_SCOPE));
 
   @Override
   public boolean appliesTo(@NonNull Context context, @NonNull File file) {
@@ -76,7 +52,7 @@ public class MyAnnotationDetector extends Detector implements Detector.JavaScann
   public List<Class<? extends Node>> getApplicableNodeTypes() {
     return Arrays.<Class<? extends Node>>asList(
         MethodInvocation.class,
-        ConstructorInvocation.class);
+        MethodDeclaration.class);
   }
 
   @Override
@@ -94,43 +70,31 @@ public class MyAnnotationDetector extends Detector implements Detector.JavaScann
 
     @Override
     public boolean visitMethodInvocation(@NonNull MethodInvocation call) {
-      ResolvedNode resolved = mContext.resolve(call);
-      if(resolved instanceof ResolvedMethod) {
-        ResolvedMethod method = (ResolvedMethod) resolved;
-        checkCall(call, method);
-      }
-
+      checkMethod(call);
       return false;
     }
 
-    @Override
-    public boolean visitConstructorInvocation(@NonNull ConstructorInvocation call) {
+    private void checkMethod(final MethodInvocation call) {
       ResolvedNode resolved = mContext.resolve(call);
       if(resolved instanceof ResolvedMethod) {
         ResolvedMethod method = (ResolvedMethod) resolved;
-        checkCall(call, method);
-      }
-
-      return false;
-    }
-
-    private void checkCall(@NonNull Node call, ResolvedMethod method) {
-      Iterable<ResolvedAnnotation> annotations = method.getAnnotations();
-      annotations = filterRelevantAnnotations(annotations);
-      for(ResolvedAnnotation annotation : annotations) {
-        checkMethodAnnotation(mContext, method, call, annotation);
-      }
-    }
-
-    private Iterable<ResolvedAnnotation> filterRelevantAnnotations(Iterable<ResolvedAnnotation> resolvedAnnotationsIn) {
-      List<ResolvedAnnotation> resolvedAnnotationsOut = new ArrayList<>();
-      for(ResolvedAnnotation resolvedAnnotation : resolvedAnnotationsIn) {
-        if(resolvedAnnotation.matches(CAREFUL_NOW_ANNOTATION)) {
-          resolvedAnnotationsOut.add(resolvedAnnotation);
+        final boolean isAndroidLoggingCall = isAnAndroidLoggingMethod(method);
+        if(isAndroidLoggingCall) {
+          mContext.report(LOGGER_ISSUE, call, mContext.getLocation(call),
+              "Logging should be avoided in production for security and performance reasons."
+                  + " Therefore, we created a SywLog that wraps all our calls to Logger and disable them for release flavor.");
         }
       }
 
-      return resolvedAnnotationsOut;
+    }
+
+    private boolean isAnAndroidLoggingMethod(ResolvedMethod method) {
+      return method.matches("v") ||
+          method.matches("d") ||
+          method.matches("i") ||
+          method.matches("w") ||
+          method.matches("e") ||
+          method.matches("wtf");
     }
 
   }

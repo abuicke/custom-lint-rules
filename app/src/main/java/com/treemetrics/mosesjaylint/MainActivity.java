@@ -2,6 +2,7 @@ package com.treemetrics.mosesjaylint;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 
 public class MainActivity extends Activity {
 
@@ -9,8 +10,18 @@ public class MainActivity extends Activity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    final Dummy dummy = new Dummy();
-    dummy.getHarvestOp();
+    Log.v("tag", "log");
+    Log.d("tag", "log");
+    Log.i("tag", "log");
+    Log.w("tag", "log");
+    Log.e("tag", "log");
+    Log.wtf("tag", "log");
+
+    method();
+  }
+
+  private void method() {
+
   }
 
 }

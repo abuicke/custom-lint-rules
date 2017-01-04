@@ -11,7 +11,7 @@ public class MyIssueRegistry extends IssueRegistry {
   @Override
   public List<Issue> getIssues() {
     return new ArrayList<Issue>() {{
-      add(MyAnnotationDetector.CAREFUL_NOW_ISSUE);
+      add(MyAnnotationDetector.LOGGER_ISSUE);
     }};
   }
 
